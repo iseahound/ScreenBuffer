@@ -1,6 +1,7 @@
 ﻿class ScreenBuffer {
 
    static GDI := (this) => ObjBindMethod(this, "call", 1)()
+   static DIRECTX9 := (this) => ObjBindMethod(this, "call", 9)()
    static DIRECTX11 := (this) => ObjBindMethod(this, "call", 11)()
 
    __New(engine := 1) {
@@ -21,6 +22,9 @@
 
       if (engine = 1)
          this.Init_GDI(sw, sh)
+
+      if (engine = 9)
+         this.Init_DIRECTX9()
 
       if (engine = 11)
          this.Init_DIRECTX11()
@@ -99,6 +103,76 @@
       this.Cleanup := (*) => Cleanup()
    }
 
+   Init_DIRECTX9() {
+
+      assert d3d := Direct3DCreate9(D3D_SDK_VERSION := 32), "Direct3DCreate9 failed."
+
+      ComCall(IDirect3D9_GetAdapterDisplayMode := 8, d3d, "uint", D3DADAPTER_DEFAULT := 0, "ptr", D3DDISPLAYMODE := Buffer(16, 0))
+      Windowed := true
+      BackBufferCount := 1
+      BackBufferHeight := NumGet(D3DDISPLAYMODE, 4, "uint")
+      BackBufferWidth := NumGet(D3DDISPLAYMODE, 0, "uint")
+      SwapEffect := 1 ; D3DSWAPEFFECT_DISCARD
+      hDeviceWindow := WinExist("A")
+
+      ; create device & capture surface
+      D3DPRESENT_PARAMETERS := Buffer(48+2*A_PtrSize, 0)
+         NumPut("uint",  BackBufferWidth, D3DPRESENT_PARAMETERS, 0)
+         NumPut("uint", BackBufferHeight, D3DPRESENT_PARAMETERS, 4)
+         NumPut("uint",  BackBufferCount, D3DPRESENT_PARAMETERS, 12)
+         NumPut("uint",       SwapEffect, D3DPRESENT_PARAMETERS, 24)
+         NumPut( "ptr",    hDeviceWindow, D3DPRESENT_PARAMETERS, 24+A_PtrSize)
+         NumPut( "int",         Windowed, D3DPRESENT_PARAMETERS, 24+2*A_PtrSize)
+      ComCall(IDirect3D9_CreateDevice := 16, d3d
+               ,   "uint", D3DADAPTER_DEFAULT := 0
+               ,   "uint", D3DDEVTYPE_HAL := 1
+               ,    "ptr", 0 ; hFocusWindow
+               ,   "uint", D3DCREATE_SOFTWARE_VERTEXPROCESSING := 0x00000020
+               ,    "ptr", D3DPRESENT_PARAMETERS
+               ,   "ptr*", &device:=0)
+      ComCall(IDirect3DDevice9_CreateOffscreenPlainSurface := 36, device
+               ,   "uint", BackBufferWidth
+               ,   "uint", BackBufferHeight
+               ,   "uint", D3DFMT_A8R8G8B8 := 21
+               ,   "uint", D3DPOOL_SYSTEMMEM := 2
+               ,   "ptr*", &surface:=0
+               ,    "ptr", 0)
+
+      Update() {
+         ; get the data
+         ComCall(IDirect3DDevice9_GetFrontBufferData := 33, device, "uint", 0, "ptr", surface)
+
+         ; copy it into our buffers
+         ComCall(IDirect3DSurface9_LockRect := 13, surface, "ptr", D3DLOCKED_RECT := Buffer(A_PtrSize*2), "ptr", 0, "uint", 0)
+         pitch := NumGet(D3DLOCKED_RECT, 0, "int")
+         pBits := NumGet(D3DLOCKED_RECT, A_PtrSize, "ptr")
+         ComCall(IDirect3DSurface9_UnlockRect := 14, surface)
+
+         this.ptr := pBits
+         this.size := pitch * BackBufferHeight
+      }
+
+      Cleanup() {
+         ObjRelease(surface)
+         ObjRelease(device)
+         ObjRelease(d3d)
+      }
+
+      Direct3DCreate9(SDKVersion) {
+         if !DllCall("GetModuleHandle","str","d3d9")
+            DllCall("LoadLibrary","str","d3d9")
+         return DllCall("d3d9\Direct3DCreate9", "uint", SDKVersion, "ptr")
+      }
+
+      assert(statement, message) {
+         if !statement
+            throw ValueError(message, -1, statement)
+      }
+
+      this.Update := (*) => Update()
+      this.Cleanup := (*) => Cleanup()
+   }
+
    Init_DIRECTX11() {
 
       assert IDXGIFactory := CreateDXGIFactory(), "Create IDXGIFactory failed."
@@ -132,7 +206,7 @@
                ,    "ptr", 0                            ; pFeatureLevels
                ,   "uint", 0                            ; FeatureLevels
                ,   "uint", D3D11_SDK_VERSION := 7       ; SDKVersion
-               ,   "ptr*", &d3d_device:=0               ; ppDevice        
+               ,   "ptr*", &d3d_device:=0               ; ppDevice
                ,   "ptr*", 0                            ; pFeatureLevel
                ,   "ptr*", &d3d_context:=0              ; ppImmediateContext
                ,"HRESULT")
@@ -165,7 +239,7 @@
          ; Unbind resources.
          Unbind()
 
-         ; Allocate a shared buffer for all calls of AcquireNextFrame. 
+         ; Allocate a shared buffer for all calls of AcquireNextFrame.
          static DXGI_OUTDUPL_FRAME_INFO := Buffer(48, 0)
 
          if !IsSet(timeout) {
@@ -254,11 +328,9 @@
          return ppFactory
       }
 
-      assert(statement, error) {
-         if !statement {
-            MsgBox error, "Error", 16
-            Exit
-         }
+      assert(statement, message) {
+         if !statement
+            throw ValueError(message, -1, statement)
       }
 
       this.Update := (this, p*) => Update(p*)
