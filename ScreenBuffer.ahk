@@ -161,14 +161,14 @@
       ; Persist the concept of a desktop_resource as a closure???
       local desktop_resource
 
-      Update(wait := false) {
+      Update(timeout := unset) {
          ; Unbind resources.
          Unbind()
 
          ; Allocate a shared buffer for all calls of AcquireNextFrame. 
          static DXGI_OUTDUPL_FRAME_INFO := Buffer(48, 0)
 
-         if (wait) {
+         if !IsSet(timeout) {
             ; The following loop structure repeatedly checks for a new frame.
             loop {
                ; Ask if there is a new frame available immediately.
@@ -187,7 +187,7 @@
                ComCall(IDXGIOutputDuplication_ReleaseFrame := 14, Duplication)
             }
          } else {
-            try ComCall(IDXGIOutputDuplication_AcquireNextFrame := 8, Duplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+            try ComCall(IDXGIOutputDuplication_AcquireNextFrame := 8, Duplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
                   return
@@ -261,7 +261,7 @@
          }
       }
 
-      this.Update := (this, wait:=false) => Update(wait)
+      this.Update := (this, p*) => Update(p*)
       this.Cleanup := (*) => Cleanup()
    }
 
