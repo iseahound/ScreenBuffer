@@ -1,8 +1,8 @@
 ﻿class ScreenBuffer {
 
-   static GDI => this(1)
-   static DIRECTX9 => this(9)
-   static DIRECTX11 => this(11)
+   static GDI() => this(1)
+   static DIRECTX9() => this(9)
+   static DIRECTX11() => this(11)
 
    __New(engine := 1) {
       this.engine := engine
