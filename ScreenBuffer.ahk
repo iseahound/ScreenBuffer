@@ -138,7 +138,7 @@
                ,   "ptr*", &surface:=0
                ,    "ptr", 0)
 
-      Update() {
+      Update(this) {
          ; get the data
          ComCall(IDirect3DDevice9_GetFrontBufferData := 33, device, "uint", 0, "ptr", surface)
 
@@ -152,7 +152,7 @@
          this.size := pitch * BackBufferHeight
       }
 
-      Cleanup() {
+      Cleanup(this) {
          ObjRelease(surface)
          ObjRelease(device)
          ObjRelease(d3d)
@@ -169,8 +169,8 @@
             throw ValueError(message, -1, statement)
       }
 
-      this.Update := (*) => Update()
-      this.Cleanup := (*) => Cleanup()
+      this.Update := Update
+      this.Cleanup := Cleanup
    }
 
    Init_DIRECTX11() {
@@ -235,7 +235,7 @@
       ; Persist the concept of a desktop_resource as a closure???
       local desktop_resource
 
-      Update(timeout := unset) {
+      Update(this, timeout := unset) {
          ; Unbind resources.
          Unbind()
 
@@ -306,7 +306,7 @@
          }
       }
 
-      Cleanup() {
+      Cleanup(this) {
          Unbind()
          ObjRelease(staging_tex)
          ObjRelease(duplication)
@@ -333,8 +333,8 @@
             throw ValueError(message, -1, statement)
       }
 
-      this.Update := (this, p*) => Update(p*)
-      this.Cleanup := (*) => Cleanup()
+      this.Update := Update
+      this.Cleanup := Cleanup
    }
 
    Save(filepath) {
