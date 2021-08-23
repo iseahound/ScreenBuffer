@@ -267,11 +267,11 @@
             try ComCall(IDXGIOutputDuplication_AcquireNextFrame := 8, Duplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
-                  return
+                  return this ; Remember to enable method chaining.
                else throw
 
             if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") = 0
-               return
+               return this ; Remember to enable method chaining.
          }
 
          ; map new resources.
