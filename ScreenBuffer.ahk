@@ -150,6 +150,9 @@
 
          this.ptr := pBits
          this.size := pitch * BackBufferHeight
+         
+         ; Remember to enable method chaining.
+         return this
       }
 
       Cleanup(this) {
