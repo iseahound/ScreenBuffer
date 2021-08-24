@@ -39,7 +39,7 @@
       DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
       ; Create a Bitmap with 32-bit pre-multiplied ARGB. (Owned by this object!)
-      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", sw, "int", sh, "uint", 4 * sw, "uint", 0xE200B, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", sw, "int", sh, "uint", this.size / sh, "uint", 0xE200B, "ptr", this.ptr, "ptr*", &pBitmap:=0)
       DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmap, "ptr*", &Graphics:=0)
       DllCall("gdiplus\GdipTranslateWorldTransform", "ptr", Graphics, "float", -sx, "float", -sy, "int", 0)
 
